@@ -1,74 +1,90 @@
 ﻿using GenesisSystem.DataAccess.Repository.IRepository;
 using GenesisSystem.Models;
+using GenesisSystem.Utility;
 using GenesisSystem.Web.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Nancy.Json;
+using System.Data;
+using System.Net;
+using System.Net.Http.Json;
+using System.Text;
 
 namespace GenesisSystem.Controllers
 {
-    
     public class CategoryController : Controller
     {
         IUnitOfWork _unitOfWork;
+        
         public CategoryController(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
         }
-
-        public IActionResult Index()
+        [HttpGet]
+        public async Task<IActionResult> Index()
         {
-            
-            return View();
+            var objCategories  = await _unitOfWork.Category.GetAllAsync();
+            if (objCategories==null)
+            {
+                TempData["error"] = "An error occured while getting the Categories, please check API settings";
+                return RedirectToAction("Index","Home");
+            }
+            return View(objCategories);
         }
         //GET
         public IActionResult Create()
         {
             return View();
         }
-        //Post
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Create(Category obj)
+        public async Task<IActionResult> Create(Category obj)
         {
-          
             if (ModelState.IsValid)
             {
-                _unitOfWork.Category.Add(obj);
-                _unitOfWork.Save();
-                TempData["success"] = "Category has been created successfully";
+                var result = await _unitOfWork.Category.PostAsync(obj);
+                if (result)
+                    TempData["success"] = "Category has been created successfully";
+                else
+                    TempData["error"] = "An error occured while adding the Category, please check API settings";
+
                 return RedirectToAction("Index");
             }
             return View(obj);
-
         }
+        //Post
+
 
         //GET
-        public IActionResult Edit(int? id)
+        public async Task<IActionResult>  Edit(int? id)
         {
             if (id == null || id == 0)
             {
                 return NotFound();
             }
 
-            var categoryFromDb = _unitOfWork.Category.GetFirstOrDefault(u => u.Id == id);
+            var categoryFromDb = await _unitOfWork.Category.GetAsync(id);
 
             if (categoryFromDb == null)
             {
                 return NotFound();
             }
-            
+
             return View(categoryFromDb);
         }
         //Post
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(Category obj)
+        public async Task<IActionResult> Edit(Category obj)
         {
-            
+
             if (ModelState.IsValid)
             {
-                _unitOfWork.Category.Update(obj);
-                _unitOfWork.Save();
-                TempData["success"] = "Category has been updated successfully";
+                var result = await _unitOfWork.Category.UpdateAsync(obj);
+                if (result)
+                    TempData["success"] = "Category has been updated successfully";
+                else
+                    TempData["error"] = "An error occured while updating the Category, please check API settings";
+                
 
                 return RedirectToAction("Index");
             }
@@ -77,14 +93,14 @@ namespace GenesisSystem.Controllers
         }
 
         //GET
-        public IActionResult Delete(int? id)
+        public async Task<IActionResult> Delete(int? id)
         {
             if (id == null || id == 0)
             {
                 return NotFound();
             }
 
-            var categoryFromDb = _unitOfWork.Category.GetFirstOrDefault(u => u.Id == id);
+            var categoryFromDb = await _unitOfWork.Category.GetAsync(id);
 
             if (categoryFromDb == null)
             {
@@ -96,35 +112,37 @@ namespace GenesisSystem.Controllers
         //Post
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public IActionResult DeletePOST(int? id)
-        {
-            var obj = _unitOfWork.Category.GetFirstOrDefault(u => u.Id == id);
-            if (obj == null)
-            {
-                return NotFound();
-            }
-
-            _unitOfWork.Category.Remove(obj);
-            _unitOfWork.Save();
-            TempData["success"] = "Category has been deleted successfully";
-
-            return RedirectToAction("Index");
-
-        }
-        public IActionResult List(int? id)
+        public async Task<IActionResult> DeletePOST(int? id)
         {
             if (id == null || id == 0)
             {
                 return NotFound();
             }
 
-            var categoryFromDb = _unitOfWork.Category.GetFirstOrDefault(u => u.Id == id);
+            var categoryFromDb = await _unitOfWork.Category.DeleteAsync(id);
+
+            if (categoryFromDb == null)
+            {
+                TempData["error"] = "An error occured while updating the Category, please check API settings";
+                return NotFound();
+            }
+            TempData["success"] = "Category has been deleted successfully";
+            return RedirectToAction("Index");
+        }
+        public async Task<IActionResult> List(int? id)
+        {
+            if (id == null || id == 0)
+            {
+                return NotFound();
+            }
+
+            var categoryFromDb = await _unitOfWork.Category.GetAsync(id);
 
             if (categoryFromDb == null)
             {
                 return NotFound();
             }
-            ViewBag.ProductList = _unitOfWork.Category.GetProducts(id);
+            ViewBag.ProductList = await _unitOfWork.Category.ProductListAsync(id);
 
             return View(categoryFromDb);
         }

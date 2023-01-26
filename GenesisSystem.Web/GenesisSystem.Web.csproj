@@ -13,10 +13,13 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Nancy" Version="2.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\GenesisSystem.DataAccess\GenesisSystem.DataAccess.csproj" />
+    <ProjectReference Include="..\GenesisSystem.Utility\GenesisSystem.Utility.csproj" />
   </ItemGroup>
 
 </Project>

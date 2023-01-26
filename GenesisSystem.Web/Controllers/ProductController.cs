@@ -2,6 +2,7 @@
 using GenesisSystem.DataAccess.Repository.IRepository;
 using GenesisSystem.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace GenesisSystem.Controllers
@@ -15,33 +16,42 @@ namespace GenesisSystem.Controllers
             _unitOfWork = unitOfWork;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            IEnumerable<Product> objCoverType = _unitOfWork.Product.GetAll();
-            return View(objCoverType);
+            var objProducts = await _unitOfWork.Product.GetAllAsync();
+            if (objProducts == null)
+            {
+                TempData["error"] = "An error occured while getting the Products, please check API settings";
+                return RedirectToAction("Index", "Home");
+            }
+            var Temp = await _unitOfWork.Category.GetAllAsync();
+            SelectList categorySelectList = new SelectList(Temp, "Id", "Name");
+
+            ViewData["CategoryList"] = categorySelectList;
+            return View(objProducts);
         }
         //GET
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            ViewBag.StatesList = _unitOfWork.Category.GetAll();
+            var Temp = await _unitOfWork.Category.GetAllAsync();
+            SelectList categorySelectList = new SelectList(Temp, "Id", "Name");
+
+            ViewData["CategoryList"] = categorySelectList;
             return View();
         }
         //Post
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(Product obj)
-        {
-            //if (obj.Name == obj.Name.ToString())
-            //{
-            //    ModelState.AddModelError("name", "The DisplayOrder cannot exactly match the name");
-            //    //Custom Error.
-            //    //ModelState.AddModelError("CustomError", "The DisplayOrder cannot exactly match the name");
-            //}
+        public async Task<IActionResult> Create(Product obj)
+        {   
             if (ModelState.IsValid)
             {
-                _unitOfWork.Product.Add(obj);
-                _unitOfWork.Save();
-                TempData["success"] = "Category has been created successfully";
+                var result = await _unitOfWork.Product.PostAsync(obj);
+                if (result)
+                    TempData["success"] = "Product has been created successfully";
+                else
+                    TempData["error"] = "An error occured while adding the Product, please check API settings";
+
                 return RedirectToAction("Index");
             }
             return View(obj);
@@ -49,37 +59,34 @@ namespace GenesisSystem.Controllers
         }
 
         //GET
-        public IActionResult Edit(int? id)
+        public async Task<IActionResult> Edit(int? id)
         {
             if (id == null || id == 0)
             {
                 return NotFound();
             }
 
-            var CoverTypeFromDb = _unitOfWork.Product.GetFirstOrDefault(u => u.Id == id);
+            var productTypeFromDb = await _unitOfWork.Product.GetAsync(id);
 
-            if (CoverTypeFromDb == null)
+            if (productTypeFromDb == null)
             {
                 return NotFound();
             }
-            return View(CoverTypeFromDb);
+            return View(productTypeFromDb);
         }
         //Post
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(Product obj)
+        public async Task<IActionResult> Edit(Product obj)
         {
-            //if (obj.Name == obj.Name.ToString())
-            //{
-            //    ModelState.AddModelError("name", "The DisplayOrder cannot exactly match the name");
-            //    //Custom Error.
-            //    //ModelState.AddModelError("CustomError", "The DisplayOrder cannot exactly match the name");
-            //}
             if (ModelState.IsValid)
             {
-                _unitOfWork.Product.Update(obj);
-                _unitOfWork.Save();
-                TempData["success"] = "Category has been updated successfully";
+                var result = await _unitOfWork.Product.UpdateAsync(obj);
+                if (result)
+                    TempData["success"] = "Category has been updated successfully";
+                else
+                    TempData["error"] = "An error occured while updating the Category, please check API settings";
+
 
                 return RedirectToAction("Index");
             }
@@ -88,39 +95,57 @@ namespace GenesisSystem.Controllers
         }
 
         //GET
-        public IActionResult Delete(int? id)
+        public async Task<IActionResult> Delete(int? id)
         {
             if (id == null || id == 0)
             {
                 return NotFound();
             }
 
-            var CoverTypeFromDb = _unitOfWork.Product.GetFirstOrDefault(u => u.Id == id);
+            var productFromDb = await _unitOfWork.Product.GetAsync(id);
 
-            if (CoverTypeFromDb == null)
+            if (productFromDb == null)
             {
                 return NotFound();
             }
 
-            return View(CoverTypeFromDb);
+            return View(productFromDb);
         }
         //Post
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public IActionResult DeletePOST(int? id)
+        public async Task<IActionResult> DeletePOST(int? id)
         {
-            var obj = _unitOfWork.Product.GetFirstOrDefault(u => u.Id == id);
-            if (obj == null)
+            if (id == null || id == 0)
             {
                 return NotFound();
             }
 
-            _unitOfWork.Product.Remove(obj);
-            _unitOfWork.Save();
-            TempData["success"] = "Category has been deleted successfully";
+            var productFromDb = await _unitOfWork.Product.DeleteAsync(id);
 
+            if (productFromDb == null)
+            {
+                TempData["error"] = "An error occured while updating the Category, please check API settings";
+                return NotFound();
+            }
+            TempData["success"] = "Category has been deleted successfully";
             return RedirectToAction("Index");
 
+        }
+        [HttpPost]
+        public async Task<IActionResult> UpdateProductDynamically(int CategoryId,int ProductId, string ProductName)
+        {
+            if (ProductName.Length>32)
+            {
+                TempData["error"] = "Product Name Length can't be longer than 20 character.";
+            }
+            else
+            {
+                var Product = await _unitOfWork.Product.UpdateProductDynamically(ProductId, CategoryId, ProductName);
+            }
+            
+            
+            return Json("");
         }
     }
 }

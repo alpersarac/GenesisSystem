@@ -1,7 +1,9 @@
 using GenesisSystem.DataAccess;
 using GenesisSystem.DataAccess.Repository;
 using GenesisSystem.DataAccess.Repository.IRepository;
+using GenesisSystem.Models.APISettings;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +13,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlSer
     builder.Configuration.GetConnectionString("DefaultConnection")
     ));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.Configure<ApiSettings>(builder.Configuration.GetSection("API"));
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -28,8 +31,10 @@ app.UseRouting();
 
 app.UseAuthorization();
 
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+//app.MapControllerRoute(
+//    name: "default",
+//    pattern: "{controller=Home}/{action=Index}/{id?}");
+
+app.MapDefaultControllerRoute();
 
 app.Run();

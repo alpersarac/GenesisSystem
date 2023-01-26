@@ -1,5 +1,4 @@
-﻿using GenesisSystem.Models;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace GenesisSystem.DataAccess.Repository.IRepository
 {
-    public interface ICategoryRepository:IRepository<Category>,IApiCall<Category>
+    public interface IApiCallForProduct
     {
-        void Update(Category obj);
+        Task<bool> UpdateProductDynamically(int? productId, int categoryId, string? productName);
     }
 }

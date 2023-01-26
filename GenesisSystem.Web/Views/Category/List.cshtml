@@ -17,10 +17,18 @@
         <div class="mb-3">
             <label>Products</label>
             <ul>
-                @foreach (var Product in ViewBag.ProductList)
+                @if (ViewBag.ProductList.Count==0)
                 {
-                    <li>@Product.Name</li>
+                    <h6 class="text-danger">There is not product</h6>
                 }
+                else
+                {
+                    @foreach (var Product in ViewBag.ProductList)
+                    {
+                        <li>@Product.Name</li>
+                    }
+                }
+
             </ul>
             <span asp-validation-for="Id" class="text-danger"></span>
         </div>
